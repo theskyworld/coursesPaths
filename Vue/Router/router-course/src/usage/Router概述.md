@@ -418,3 +418,290 @@ watch(
 <script setup lang="ts"></script>
 <style scoped></style>
 ```
+
+### 编程式导航
+
+借助`router`的实例方法来进行路由的跳转，功能同 `<router-link>`
+
+##### `router.push()`
+
+调用该方法时，会向 history 栈中添加一个新的路由记录
+
+当用户点击后退按钮时，能够回到之前的 url
+
+并且点击`<router-link>`，其底层就是调用了`router.push()`
+
+| 声明式                    | 编程式             |
+| :------------------------ | :----------------- |
+| `<router-link :to="...">` | `router.push(...)` |
+
+类型 :
+
+```ts
+push(to: RouteLocationRaw): Promise<NavigationFailure | void | undefined>
+
+// RouteLocationRaw
+export declare type RouteLocationRaw = string | RouteLocationPathRaw | RouteLocationNamedRaw;
+
+// RouteLocationPathRaw
+interface RouteLocationPathRaw {
+  path: string;
+  query?: LocationQueryRaw;
+  hash?: string;
+  replace?: boolean;
+  force?: boolean;
+  state?: HistoryState;
+  [key : string] : any;
+}
+
+// RouteLocationNamedRaw
+interface RouteLocationNamedRaw {
+  name?: RouteRecordName;
+  params?: RouteParamsRaw;
+  query?: LocationQueryRaw;
+  hash?: string;
+  replace?: boolean;
+  force?: boolean;
+  state?: HistoryState;
+  [key : string] : any;
+}
+```
+
+使用`router.push()`
+
+```vue
+<!-- App.vue -->
+<script setup lang="ts">
+import { useRouter } from "vue-router";
+const router = useRouter();
+
+const name = 'Alice1'
+function toUser() {
+  // router.push("/user/Alice")
+  // router.push('/user/Alice1');
+
+  router.push(`/user/${name}`);
+
+  // router.push({
+  //   // path: '/user/Alice1',
+  //   // 或者
+  //   // 对应路径为"/user/:name"
+  //   // name : 'user',
+  //   // params: {
+  //   //   name : 'Alice3',
+  //   // }
+
+  //   // 或者
+  //   // 对应路径为"/user"
+  //   path: "/user",
+  //   query: {
+  //     name: "Alice1",
+  //   },
+
+  //   hash: "#hash",
+  // });
+}
+</script>
+
+<template>
+  <div class="container">
+    <div class="controller">
+      <div><button @click="toUser">toUser</button></div>
+</template>
+
+<style scoped></style>
+
+```
+
+```ts
+{
+    // 定义路径参数，以":"开头，参数名为name
+    path: "/user/:name", // 使用params或者路径传参
+    // path : '/user', // 使用query传参
+    component: User,
+    name: "user",
+  },
+```
+
+##### `router.replace()`
+
+替换掉当前的路由，实现路由跳转
+
+| 声明式                            | 编程式                |
+| :-------------------------------- | :-------------------- |
+| `<router-link :to="..." replace>` | `router.replace(...)` |
+
+类型 :
+
+```ts
+// 跟push具有一样的参数类型
+replace(to: RouteLocationRaw): Promise<NavigationFailure | void | undefined>;
+```
+
+```ts
+router.push({ path: "/user", replace: true });
+// 相当于
+router.replace({ path: "/user" });
+```
+
+##### `router.go()`
+
+在路由历史堆栈中前进或后退指定的步数，类似于`window.history.go(n)`
+
+类型 : `go(delta: number): void;`
+
+```ts
+// 向前移动一条记录，与 router.forward() 相同
+router.go(1);
+
+// 返回一条记录，与 router.back() 相同
+router.go(-1);
+
+// 前进 3 条记录
+router.go(3);
+
+// 如果没有那么多记录，静默失败
+router.go(-100);
+router.go(100);
+```
+
+### 重定向和别名
+
+#### 重定向`redirect`
+
+将当前路由重新指向其它得到路由，最终跳转到其它路由
+
+类型 :
+
+```ts
+redirect?: RouteRecordRedirectOption;
+
+// RouteRecordRedirectOption
+type RouteRecordRedirectOption =
+  | RouteLocationRaw
+  | ((to: RouteLocation) => RouteLocationRaw);
+
+// RouteLocationRaw
+type RouteLocationRaw = string | RouteLocationPathRaw | RouteLocationNamedRaw;
+```
+
+```ts
+// 重定向
+  {
+    path: "/city",
+    // 最终实际跳转到'/detail'路由
+    // redirect: "/detail",
+
+    // 使用命名路由
+    // redirect: {
+    //   name: "detail",
+    // },
+
+    // 或者使用一个函数
+    redirect: (to: RouteLocation) => {
+      return {
+        name: "detail",
+        params: {
+          chapters: [1, 2, 3],
+        },
+      };
+    },
+  },
+```
+
+相对重定向
+
+```ts
+ // 嵌套路由
+  {
+    path: "/cart",
+    component: Cart,
+    redirect: (to: RouteLocation) => {
+      return {
+        // 相对重定向，当对于当前展示的组件对应的路由
+        // 例如最终跳转到'/cart/cartItem'、'/product/cartItem'...
+        // 避免使用
+        // path: "cartItem",
+        path: "/cart/cartItem",
+        senstive: true,
+      };
+    },
+    children: [
+      {
+        // path: "/cart/cartItem", // 以/开头的为绝对路径，反之为相对路径
+        // 等价于
+        path: "cartItem", // 相对路径，相对于"/cart"
+        component: CartItem,
+      },
+      {
+        // path: "/cartAmount",
+        path: "cartAmount",
+        component: CartAmount,
+        name: "cartAmount",
+      },
+    ],
+  },
+```
+
+#### 别名`alias`
+
+将当前路由的路径别名为其它的路径，当访问这个其它路径时将最终跳转到当前路径
+
+类型 : `alias?: string | string[];`
+
+```ts
+const routes = [
+  // 访问'/'和"/home"都将跳转至"/"对应的组件
+  {
+    path: "/",
+    component: Homepage,
+    alias: "/home",
+  },
+  {
+    path: "/users",
+    component: UsersLayout,
+    children: [
+      // 以下三个url都将最终跳转到'/users'对应的组件-UserList
+      // - /users
+      // - /users/list
+      // - /people
+      {
+        path: "",
+        component: UserList,
+        alias: ["/people", "list"/**相对于/users/],
+      },
+    ],
+  },
+];
+```
+
+在别名中包含参数；
+
+```ts
+const routes = [
+  {
+    path: "/users/:id",
+    component: UsersByIdLayout,
+    children: [
+      // 以下三个url都将最终跳转到"/users/:id/profile"对应的组件-UserDetails
+      // - /users/24           ("")
+      // - /users/24/profile   ("profile")
+      // - /24                 ("/:id")
+      {
+        path: "profile",
+        component: UserDetails,
+        alias: [
+          "/:id",
+          /*绝对路径，等价于"/:id":*/ "" /*相对路径，等价于"/users/:id"*/,
+        ],
+      },
+    ],
+  },
+];
+```
+
+### 命名视图
+
+在同一级的路由（同一个页面）中展示多个视图，每个视图都有着各自的名字
+
+即存在多个路由出口

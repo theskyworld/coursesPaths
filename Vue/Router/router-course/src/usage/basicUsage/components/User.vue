@@ -4,10 +4,11 @@
     <!-- <p>username : {{ $route.params.name }}</p> -->
     <!-- 或者 -->
     <p>username : {{ route.params.name }}</p>
+    <p>{{ route.query.name }}</p>
   </div>
 </template>
 <script setup lang="ts">
-import { useRoute, beforeRouteUpdate } from "vue-router";
+import { useRoute } from "vue-router";
 import { watch } from "vue";
 const route = useRoute();
 

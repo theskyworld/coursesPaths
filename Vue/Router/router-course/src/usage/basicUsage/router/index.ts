@@ -8,7 +8,7 @@ import Cart from "../components/Cart.vue";
 import CartItem from "../components/CartItem.vue";
 import CartAmount from "../components/CartAmount.vue";
 import Person from "../components/Person.vue";
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHashHistory, RouteLocation } from "vue-router";
 
 // 定义路由
 // 每个路由映射一个对应的组件
@@ -25,8 +25,10 @@ const routes = [
   // 动态路径参数
   {
     // 定义路径参数，以":"开头，参数名为name
-    path: "/user/:name",
+    path: "/user/:name", // 使用params或者路径传参
+    // path: "/user", // 使用query传参
     component: User,
+    name: "user",
   },
 
   // 使用正则表达式进行路径参数匹配
@@ -61,6 +63,7 @@ const routes = [
     // path: "/detail/:chapters(\\d+)+",
 
     component: Detail,
+    name: "detail",
   },
 
   // senetive和strict
@@ -81,17 +84,52 @@ const routes = [
   {
     path: "/cart",
     component: Cart,
+    redirect: (to: RouteLocation) => {
+      return {
+        // 相对重定向，当对于当前展示的组件对应的路由
+        // 例如最终跳转到'/cart/cartItem'、'/product/cartItem'...
+        // 避免使用
+        // path: "cartItem",
+        path: "/cart/cartItem",
+        senstive: true,
+      };
+    },
     children: [
       {
-        path: "/cart/cartItem",
+        // path: "/cart/cartItem", // 以/开头的为绝对路径，反之为相对路径
+        // 等价于
+        path: "cartItem", // 相对路径，相对于"/cart"
         component: CartItem,
       },
       {
-        path: "/cartAmount",
+        // path: "/cartAmount",
+        path: "cartAmount",
         component: CartAmount,
         name: "cartAmount",
       },
     ],
+  },
+
+  // 重定向
+  {
+    path: "/city",
+    // 最终实际跳转到'/detail'路由
+    // redirect: "/detail",
+
+    // 使用命名路由
+    // redirect: {
+    //   name: "detail",
+    // },
+
+    // 或者使用一个函数
+    redirect: (to: RouteLocation) => {
+      return {
+        name: "detail",
+        params: {
+          chapters: [1, 2, 3],
+        },
+      };
+    },
   },
 ];
 

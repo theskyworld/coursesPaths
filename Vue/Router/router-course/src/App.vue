@@ -1,13 +1,76 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useRouter } from "vue-router";
+const router = useRouter();
+
+const name = "Alice1";
+function toUser() {
+  // router.push()
+
+  // router.push("/user/Alice")
+  // router.push('/user/Alice1');
+  // router.push(`/user/${name}`);
+  router.push({
+    //   // path: '/user/Alice1',
+    //   // 或者
+    //   // 对应路径为"/user/:name"
+    name: "user",
+    params: {
+      name: "Alice3",
+    },
+
+    //   // 或者
+    //   // 对应路径为"/user"
+    // path: "/user",
+    // query: {
+    //   name: "Alice1",
+    // },
+
+    hash: "#hash",
+  });
+
+  // router.replace()
+  // router.replace({
+  //   path: "user",
+  //   query: {
+  //     name: "Alice1",
+  //   },
+  // });
+  // 等价于
+  // router.push({
+  //   path: 'user',
+  //   query: {
+  //     name: 'Alice1',
+  //   },
+  //   replace: true,
+  // });
+
+  // router.go()
+  // router.go(1);
+  // 等价于router.forward()
+
+  // router.go(-1);
+  // 等价于
+  // router.back();
+}
+
+function toCity() {
+  router.push({
+    path: "/city",
+  });
+}
+</script>
 
 <template>
   <div class="container">
     <div class="controller">
-      <div><router-link to="/">Home</router-link></div>
+      <div>
+        <router-link to="/">Home</router-link>
+      </div>
       <div><router-link to="/about">About</router-link></div>
 
       <!-- 动态路径参数 -->
       <!-- 给路径参数传值 -->
+      <div><button @click="toUser">toUser</button></div>
       <div><router-link to="/user/Alice">User-Alice</router-link></div>
       <div><router-link to="/user/Alice2">User-Alice2</router-link></div>
 
@@ -38,10 +101,13 @@
       <div>
         <router-link :to="{ name: 'cartAmount' }">CartAmount</router-link>
       </div>
+
+      <!-- 重定向 -->
+      <div><button @click="toCity">toCity</button></div>
     </div>
-    <div class="showPages">
-      <router-view></router-view>
-    </div>
+  </div>
+  <div class="showPages">
+    <router-view></router-view>
   </div>
 </template>
 
