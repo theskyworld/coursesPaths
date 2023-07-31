@@ -112,6 +112,10 @@ createApp(App).use(router).mount("#app");
 
 ### 路径参数
 
+通过 url 来给跳转的目标路径传递参数
+
+除此之外，还有例如(使用`props`属性)[https://router.vuejs.org/zh/guide/essentials/passing-props.html]的方式也能够来实现为组件传递参数
+
 #### 动态路由匹配
 
 通过在路径中使用一个动态的字段（路径参数）来给同一个组件进行动态路由匹配
@@ -757,4 +761,40 @@ const router = createRouter({
 });
 
 export default router;
+```
+
+### 历史模式
+
+##### html5 模式
+
+通过使用`createWebHistory()`进行创建
+
+```ts
+import { createRouter, createWebHistory } from "vue-router";
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    //...
+  ],
+});
+```
+
+需要(配置后端服务器)[https://router.vuejs.org/zh/guide/essentials/history-mode.html]，避免出现直接访问例如`https://example.com/user/id`出现 404 的错误
+
+##### hash 模式
+
+通过使用`createWebHashHistory()`进行创建
+
+在路径中会存在`#`的哈希字符
+
+```ts
+import { createRouter, createWebHashHistory } from "vue-router";
+
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes: [
+    //...
+  ],
+});
 ```
