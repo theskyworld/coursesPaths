@@ -704,4 +704,57 @@ const routes = [
 
 在同一级的路由（同一个页面）中展示多个视图，每个视图都有着各自的名字
 
-即存在多个路由出口
+即存在多个路由出口，此时每个路由将对应一个或多个组件，使用`components`属性
+
+```vue
+<template>
+  <div class="container">
+    <h2>命名视图</h2>
+    <div class="controllers">
+      <router-link to="/">Home</router-link>
+      <router-link to="/another">another</router-link>
+    </div>
+    <div class="showPages">
+      <!-- 命名视图 -->
+      <!-- 如果未添加name属性，则默认值为default -->
+      <router-view name="first"></router-view>
+      <router-view name="second"></router-view>
+      <router-view name="third"></router-view>
+    </div>
+  </div>
+</template>
+```
+
+```ts
+import { createRouter, createWebHashHistory } from "vue-router";
+import FirstView from "../components/FirstView.vue";
+import SecondView from "../components/SecondView.vue";
+import ThirdView from "../components/ThirdView.vue";
+
+const routes = [
+  {
+    path: "/",
+    // 命名视图
+    components: {
+      first: FirstView,
+      second: SecondView,
+      third: ThirdView,
+    },
+  },
+  {
+    path: "/another",
+    components: {
+      first: ThirdView,
+      second: SecondView,
+      third: FirstView,
+    },
+  },
+];
+
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes,
+});
+
+export default router;
+```
