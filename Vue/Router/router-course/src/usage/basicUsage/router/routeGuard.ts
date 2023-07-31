@@ -3,7 +3,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Fruits from "../components/Fruits.vue";
 import Cars from "../components/Cars.vue";
-
+import GithubUsers from "../components/GithubUsers.vue";
 const routes = [
   {
     path: "/fruits",
@@ -26,16 +26,20 @@ const routes = [
     // },
     // 或者
     beforeEnter: [
-      (to, from) => {
+      (to: any, from: any) => {
         console.log("beforeEnter1...");
       },
-      (to, from) => {
+      (to: any, from: any) => {
         console.log("beforeEnter2...");
       },
-      (to, from) => {
+      (to: any, from: any) => {
         console.log("beforeEnter3...");
       },
     ],
+  },
+  {
+    path: "/githubusers",
+    component: GithubUsers,
   },
 ];
 
@@ -81,18 +85,19 @@ router.beforeEach((to, from, next) => {
   // }
 
   // 需要进行验证，且未登录
-  if (to.meta.requiresAuth && !auth.isLoggedIn) {
-    // 跳转到登录页面
-    return {
-      path: "/login",
-      query: {
-        // 保存目标路径，方便登录后直接重定向
-        redirect: to.fullPath,
-      },
-    };
-  } else {
-    next();
-  }
+  // if (to.meta.requiresAuth && !auth.isLoggedIn) {
+  //   // 跳转到登录页面
+  //   return {
+  //     path: "/login",
+  //     query: {
+  //       // 保存目标路径，方便登录后直接重定向
+  //       redirect: to.fullPath,
+  //     },
+  //   };
+  // } else {
+  //   next();
+  // }
+  next();
 });
 
 // 全局解析导航守卫

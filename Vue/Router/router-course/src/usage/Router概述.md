@@ -1154,3 +1154,48 @@ router.beforeEach((to, from, next) => {
   }
 });
 ```
+
+### 获取后端数据
+
+#### 导航完成前在导航守卫内获取
+
+例如，在`beforeRouteEnter`函数中获取数据，数据获取成功后调用`next`
+
+```ts
+<template>
+  <div class="container">
+    <h3>githubusers</h3>
+    <div>
+      <ul v-for="user in users">
+        <li>{{ user.login }}</li>
+      </ul>
+    </div>
+  </div>
+</template>
+<script lang="ts">
+import axios from "axios";
+interface User {
+  login: string;
+  [key: string]: any;
+}
+
+export default {
+  data: (): { users: User[] } => {
+    return {
+      users: [],
+    };
+  },
+  async beforeRouteEnter(to, from, next) {
+    let datas: User[] = [];
+    await axios.get("https://api.github.com/users").then((val) => {
+      datas = val.data.slice(0, 5);
+    });
+    next((vm) => {
+      vm.users = datas;
+    });
+  },
+};
+</script>
+<style scoped></style>
+
+```

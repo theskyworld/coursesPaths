@@ -4,6 +4,7 @@
     <div class="controllers">
       <button @click="toFruits">toFruits</button>
       <button @click="toCars">toCars</button>
+      <button @click="toGithubUsers">toGithubUsers</button>
     </div>
     <div class="showPages">
       <router-view></router-view>
@@ -29,14 +30,21 @@ function toCars() {
   });
 }
 
-setTimeout(() => {
-  
+// 模拟组件内params的更新，触发beforeRouteUpdate或者onBeforeRouteUpdate
+// setTimeout(() => {
+
+//   router.push({
+//     name: "cars",
+//     params: {
+//       carid: 1,
+//     },
+//   });
+// }, 3000);
+
+function toGithubUsers() {
   router.push({
-    name: "cars",
-    params: {
-      carid: 1,
-    },
+    path: "/githubusers",
   });
-}, 3000);
+}
 </script>
 <style scoped></style>
