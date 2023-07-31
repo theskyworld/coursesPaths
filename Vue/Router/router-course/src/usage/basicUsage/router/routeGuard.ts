@@ -38,8 +38,10 @@ const routes = [
     ],
   },
   {
-    path: "/githubusers",
+    // path : '/githubusers',
+    path: "/githubusers/:loginName",
     component: GithubUsers,
+    name  : 'githubUsers',
   },
 ];
 

@@ -1199,3 +1199,45 @@ export default {
 <style scoped></style>
 
 ```
+
+### 监听`params`/`query`
+
+```ts
+<script lang="ts">
+import axios from "axios";
+import { ref } from "vue";
+
+interface User {
+  login: string;
+  id: number;
+  avatar_url: string;
+  [key: string]: any;
+}
+
+export default {
+  data: (): { users: User[]; user: any } => {
+    return {
+      users: [],
+      user: ref(),
+    };
+  },
+  // 获取数据，初始化users
+  async beforeRouteEnter(to, from, next) {
+    let datas: User[] = [];
+    await axios.get("https://api.github.com/users").then((val) => {
+      datas = val.data.slice(0, 5);
+    });
+    next((vm) => {
+      vm.users = datas;
+      vm.user = datas.find((user) => user.login === "ezmobius");
+    });
+  },
+
+  // 每次params.loginName更新时，this.user跟着变化
+  beforeRouteUpdate(to, from) {
+    console.log("beforeRouteUpdate");
+
+    this.user = this.users?.find((user) => user.login === to.params.loginName);
+  },
+};
+```

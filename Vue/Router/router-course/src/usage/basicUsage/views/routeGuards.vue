@@ -43,8 +43,25 @@ function toCars() {
 
 function toGithubUsers() {
   router.push({
-    path: "/githubusers",
+    // path: "/githubusers",
+
+    name: "githubUsers",
+    params: {
+      // ["mojombo", "defunkt", "pjhyett", "wycats", "ezmobius"]
+      loginName: "ezmobius",
+    },
   });
 }
+
+// 监听params/query，模拟值的改变
+// setInterval(() => {
+//   const loginNames = ["mojombo", "defunkt", "pjhyett", "wycats", "ezmobius"];
+//   router.push({
+//     name: "githubUsers",
+//     params: {
+//       loginName: loginNames[Math.ceil(Math.random() * 5)],
+//     },
+//   });
+// }, 5000);
 </script>
 <style scoped></style>
