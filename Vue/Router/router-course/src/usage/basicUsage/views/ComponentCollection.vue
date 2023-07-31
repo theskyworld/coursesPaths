@@ -58,14 +58,15 @@ function toCity() {
     path: "/city",
   });
 }
+
+
 </script>
 
 <template>
   <div class="container">
     <div class="controller">
-      <span>
-        <router-link to="/">Home</router-link> </span
-      >| <span><router-link to="/about">About</router-link></span
+      <span> <router-link to="/">Home</router-link> </span>|
+      <span><router-link to="/about">About</router-link></span
       >|
 
       <!-- 动态路径参数 -->
@@ -112,6 +113,7 @@ function toCity() {
 
       <!-- 重定向 -->
       <span><button @click="toCity">toCity</button></span>|
+
     </div>
   </div>
   <div class="showPages">

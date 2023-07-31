@@ -10,7 +10,7 @@
 </template>
 <script setup lang="ts">
 import ComponentCollection from "./ComponentCollection.vue";
-import Sidebar from "./Sidebar.vue";
+import SideBar from "../components/Sidebar.vue"
 </script>
 <style scoped>
 .container {

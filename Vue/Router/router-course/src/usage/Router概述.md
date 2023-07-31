@@ -798,3 +798,359 @@ const router = createRouter({
   ],
 });
 ```
+
+### 路由导航守卫
+
+导航守卫的作用主要是通过跳转到指定的路由或者取消当前路由的方式来守卫路由
+
+添加导航守卫的方式存在全局、单个路由独享和组件级守卫三种
+
+添加多个导航守卫时，会按照添加的顺序依次执行
+
+#### 全局导航守卫
+
+##### 全局前置导航守卫
+
+主要是进行目标路由的是否跳转判断或者改为跳转到其它指定的路由控制
+
+通过 `router.beforeEach()`来添加一个全局的前置导航守卫
+
+该函数接收一个回调函数作为唯一的参数，返回一个回调函数用于调用后移除当前导航守卫
+
+类型 :
+
+```ts
+beforeEach(guard: NavigationGuardWithThis<undefined>): () => void;
+
+//
+interface NavigationGuardWithThis<T> {
+    (this: T, to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext): NavigationGuardReturn | Promise<NavigationGuardReturn>;
+}
+```
+
+全局前置导航守卫
+
+```ts
+// 全局前置导航守卫
+router.beforeEach((to, from, next) => {
+  // to表示将要进入的路由组件
+  // from表示将要离开的路由组件
+
+  // 返回false表示取消跳转到指定的组件，路由会自动重置到from对应的路由路径
+  // return false;
+
+  // 返回一个路由或路由地址，表示将要跳转到该路径对应的组件
+
+  if (
+    !isAuthenticated && // 用户未注册
+    to.name !== "login" // 避免无限重定向到login路由
+  ) {
+    return {
+      name: "login",
+    };
+  }
+
+  // 如果返回undefined或者true，表示调用下一个导航守卫，继续进行路由的跳转
+
+  // next表示继续调用下一个导航守卫或者继续进行跳转到指定的路由
+  // 并且next()应当只被调用一次
+  if (!isAuthenticated && to.name !== "login") {
+    next({
+      name: "login",
+    });
+  } else {
+    next();
+  }
+});
+```
+
+##### 全局解析守卫
+
+主要是在路由跳转之前，解析路由中所携带的属性（例如`meta`）并进行相应的操作
+
+以便在路由跳转之前完成这些操作
+
+通过 `router.beforeResolve()`来添加一个全局的前置解析守卫
+
+类型：
+
+```ts
+beforeResolve(guard: NavigationGuardWithThis<undefined>): () => void;
+```
+
+```ts
+router.beforeResolve(async (to, from, next) => {
+  // 要跳转的目标路由中包含请求摄像头的属性
+  // 解析之后进行相应操作，在路由跳转之前完成
+  if (to.meta.requiresCamera) {
+    try {
+      // 请求摄像头
+      await askForCameraPermission();
+      next();
+    } catch (error) {
+      if (error instanceof NotAllowedError) {
+        // ... 处理错误，然后取消导航
+        return false;
+      } else {
+        // 意料之外的错误，取消导航并把错误传给全局处理器
+        throw error;
+      }
+    }
+  }
+
+  // 不允许跳转
+  // if (to.meta.requiresAuth && !isAuthenticated) return false
+});
+```
+
+##### 全局后置钩子
+
+不会对路由的跳转进行改变
+
+而是进行路由跳转之后的辅助功能，例如分析、更改页面标题，声明页面
+
+第三个参数为`failure`，而不是`next`
+类型 :
+
+```ts
+afterEach(guard: NavigationHookAfter): () => void;
+
+// NavigationHookAfter
+interface NavigationHookAfter {
+    (to: RouteLocationNormalized, from: RouteLocationNormalized, failure?: NavigationFailure | void): any;
+}
+
+```
+
+```ts
+// 全局后置守卫
+router.afterEach((to, from, failure) => {
+  console.log(to.meta.title); // "fruit"
+  to.meta.title = "newFruit";
+  console.log(to.meta.title); // "newFruit"
+});
+```
+
+#### 路由独享守卫
+
+直接在当前的路由配置上通过`beforeEnter()`来定义一个导航守卫，并只作用于当前的路由
+
+可以为当前路由定义一个导航守卫（一个回调函数），或者多个导航守卫（多个回调函数组成的数组）
+
+需要注意的是这些回调函数在设置了`redirect`属性之后都不会被调用
+
+类型 :
+
+```ts
+beforeEnter?: NavigationGuardWithThis<undefined> | NavigationGuardWithThis<undefined>[];
+```
+
+在当前路由上添加
+
+```ts
+{
+    path: "/cars/:carid",
+    component: Cars,
+    name: "cars",
+    meta: {
+      title: "cars",
+      author: "Alice",
+    },
+    // beforeEnter: (to, from) => {
+    //   console.log("beforeEnter");
+    // },
+    // 或者
+    beforeEnter: [
+      (to, from) => {
+        console.log("beforeEnter1...");
+      },
+      (to, from) => {
+        console.log("beforeEnter2...");
+      },
+      (to, from) => {
+        console.log("beforeEnter3...");
+      },
+    ],
+  },
+```
+
+`beforeEnter`守卫只在进入路由时触发，不会在`params`、`query` 或`hash`改变时触发
+
+可以将一个函数数组传递给 `beforeEnter`
+
+```ts
+// 移除query
+function removeQueryParams(to) {
+  if (Object.keys(to.query).length)
+    return { path: to.path, query: {}, hash: to.hash };
+}
+
+// 移除hash
+function removeHash(to) {
+  if (to.hash) return { path: to.path, query: to.query, hash: "" };
+}
+
+const routes = [
+  {
+    path: "/users/:id",
+    component: UserDetails,
+    beforeEnter: [removeQueryParams, removeHash],
+  },
+  {
+    path: "/about",
+    component: UserDetails,
+    beforeEnter: [removeQueryParams],
+  },
+];
+```
+
+#### 组件内守卫
+
+将守卫定义在一个组件内，可以通过以下方式进行定义:
+
+##### 选项式 API 中
+
+`beforeRouteEnter`
+
+- 在进入组件之前调用
+- 因为在组件挂载之前触发，所以不能访问组件内的`this`(组件实例)。但是可以通过给其传递一个`next`函数，在`next`函数内访问组件实例
+- 类型 :
+
+  ```ts
+  beforeRouteEnter?: TypesConfig extends Record<'beforeRouteEnter', infer T> ? T : NavigationGuardWithThis
+
+  // NavigationGuardWithThis
+  interface NavigationGuardWithThis<T> {
+    (this: T, to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext): NavigationGuardReturn | Promise<NavigationGuardReturn>;
+  }
+  ```
+
+`beforeRouteUpdate`
+
+- 在组件的`params`、`query`、`hash`等值发变化时调用
+- 类型 :
+
+  ```ts
+  beforeRouteUpdate?: TypesConfig extends Record<'beforeRouteUpdate', infer T> ? T : NavigationGuard
+
+  // NavigationGuard
+  interface NavigationGuard {
+    (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext): NavigationGuardReturn | Promise<NavigationGuardReturn>;
+  }
+  ```
+
+`beforeRouteLeave`
+
+- 在离开组件前调用
+- 类型 : `beforeRouteLeave?: TypesConfig extends Record<'beforeRouteLeave', infer T> ? T : NavigationGuard`
+
+```ts
+<script lang="ts">
+export default {
+  beforeRouteEnter(to, from, next) {
+    console.log("beforeRouteEnter");
+    // 通过next访问组件内的this
+    next((vm) => {
+      console.log(vm);
+    });
+  },
+  beforeRouteUpdate(to, from) {
+    console.log("beforeRouteUpdate");
+    console.log(this);
+  },
+  beforeRouteLeave(to, from) {
+    console.log("beforeRouteLeave");
+    console.log(this);
+  },
+};
+</script>
+```
+
+##### 组合式 API 或者`setup`函数中
+
+`onBeforeRouteUpdate`
+
+- 同`beforeRouteUpdate`
+- 类型 : `declare function onBeforeRouteUpdate(updateGuard: NavigationGuard): void;`
+
+`onBeforeRouteLeave`
+
+- 同`beforeRouteLeave`
+- 类型 : `declare function onBeforeRouteLeave(leaveGuard: NavigationGuard): void;`
+
+```ts
+<script setup lang="ts">
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
+
+onBeforeRouteUpdate((to, from) => {
+  console.log("onBeforeRouteUpdate...");
+});
+
+onBeforeRouteLeave((to, from) => {
+  console.log("onBeforeRouteLeave...");
+});
+</script>
+```
+
+#### 导航解析流程
+
+1. 导航被触发。
+2. 在失活的组件里调用 `beforeRouteLeave` 守卫。
+3. 调用全局的 `beforeEach` 守卫。
+4. 在重用的组件里调用 `beforeRouteUpdate` 守卫(2.2+)。
+5. 在路由配置里调用 `beforeEnter`。
+6. 解析异步路由组件。
+7. 在被激活的组件里调用 `beforeRouteEnter`。
+8. 调用全局的 `beforeResolve` 守卫(2.5+)。
+9. 导航被确认。
+10. 调用全局的 `afterEach` 钩子。
+11. 触发 DOM 更新。
+12. 调用 `beforeRouteEnter` 守卫中传给 `next` 的回调函数，创建好的组件实例会作为回调函数的参数传入
+
+### 路由元信息
+
+通过在定义路由时添加一个`meta`属性来为路由添加元信息
+
+其中可以包含例如所使用的过渡的名称、谁可以对路由进行访问等信息
+
+并且这些内容可以在路由地址和导航守卫上被访问
+
+##### 定义路由元信息
+
+```ts
+const routes = [
+  {
+    path: "/fruits",
+    component: Fruits,
+    meta: {
+      // 需要进行身份验证后才可以访问目标组件
+      requiresAuth: true,
+    },
+  },
+];
+```
+
+##### 访问路由元信息
+
+在组件中可以通过`$route.meta`的方式进行访问，或者从`$route.matched`数组中进行遍历访问（`matched.some(record => record.meta)`）
+
+对应地，在导航守卫中，可以通过`to`或者`from`进行访问
+
+```ts
+// 全局前置导航守卫
+router.beforeEach((to, from, next) => {
+  // 需要进行验证，且未登录
+  if (to.meta.requiresAuth && !auth.isLoggedIn) {
+    // 跳转到登录页面
+    return {
+      path: "/login",
+      query: {
+        // 保存目标路径，方便登录后直接重定向
+        redirect: to.fullPath,
+      },
+    };
+  } else {
+    next();
+  }
+});
+```
