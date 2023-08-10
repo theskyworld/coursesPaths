@@ -1,0 +1,23 @@
+{
+  "name": "coursespaths",
+  "version": "1.0.0",
+  "description": "记录所学的每个技术栈的内容",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theskyworld/coursesPaths.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/theskyworld/coursesPaths/issues"
+  },
+  "homepage": "https://github.com/theskyworld/coursesPaths#readme",
+  "devDependencies": {
+    "express": "^4.18.2"
+  }
+}
