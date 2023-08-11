@@ -55,7 +55,7 @@ npm install
 $env:DEBUG='myapp:*'; npm start
 ```
 
-- 在'http://localhost:3000/'中进行查看
+- 在'http://localhost:5008/'中进行查看
 
 ### 路由
 
@@ -145,7 +145,7 @@ app.get("/ab+cd", function (req, res) {
 // 路由路径
 "/users/:userId/books/:bookId";
 // 匹配的请求路径
-"http://localhost:3000/users/34/books/8989"
+"http://localhost:5008/users/34/books/8989"
 // 可得出的参数及其值为,userId : 34; bookId : 8989
 // 将其添加到req.params对象中
 // req.params:
@@ -167,7 +167,7 @@ app.get('/users/:userId/books/:bookId', function (req, res) {
 // 路由路径
 "/flights/:from-:to";
 // 匹配的请求路径
-"http://localhost:3000/flights/LAX-SFO"
+"http://localhost:5008/flights/LAX-SFO"
 // req.params:
 {
   from : "LAX",
@@ -179,7 +179,7 @@ app.get('/users/:userId/books/:bookId', function (req, res) {
 // 路由路径
 "/plantae/:genus.:species";
 // 匹配的请求路径
-"http://localhost:3000/plantae/Prunus.persica"
+"http://localhost:5008/plantae/Prunus.persica"
 // req.params:
 {
   genus : "Prunus",
@@ -194,7 +194,7 @@ app.get('/users/:userId/books/:bookId', function (req, res) {
 // \d+表示传入的userId的参数需为0-9之间的任意个数值
 "/user/:userId(\d+)";
 // 匹配的请求路径
-"http://localhost:3000/user/42"
+"http://localhost:5008/user/42"
 // req.params:
 {
   userId : "42",
@@ -310,4 +310,68 @@ const bird = require("./bird");
 app.use("/bird", bird);
 
 // 访问"/bird"或者"/bird/about"路径时将调用timeLog中间件函数
+```
+
+### 静态文件
+
+express 中通过`express.static`（一个内置中间件函数）来对外暴露本地的静态文件
+
+其语法为:`express.static(root, [options])`
+
+- `root` : 存放静态文件的根目录
+- `options` : 可选的配置选项
+
+#### 暴露`'./public'`目录下的所有文件
+
+例如，通过对以下中间件函数的使用能够将本地`public`目录下的所有静态文件进行暴露
+
+```js
+app.use(express.static("public"));
+```
+
+现在，可以对以下的路径进行请求，然后访问 public 目录下任意的对应静态文件
+
+```js
+// app在508端口监听
+// 对public目录下的所有静态文件进行了暴露
+// public与app.js为同级目录，故在书写路径时可以不书写public/，直接对目录下的文件或目录进行访问即可
+"http://localhost:5008/imgs/lion.png";
+"http://localhost:5008/css/index.css";
+"http://localhost:5008/js/index.js";
+"http://localhost:5008/index.html";
+```
+
+#### 同时暴露多个静态文件目录
+
+```js
+// 同时暴露"./public"和"./files"目录下的所有静态文件
+app.use(express.static("public"));
+app.use(express.static("files"));
+```
+
+#### 指定访问时要添加的路径前缀
+
+```js
+// 访问任意public目录下的文件或目录时都需要添加"/static"前缀
+app.use("/static", express.static("public"));
+```
+
+访问方式为
+
+```js
+// 尽管"/static"和public目录无实际的目录关系，但是要添加"/static"前缀
+"http://localhost:5008/static/imgs/lion.png";
+"http://localhost:5008/static/css/index.css";
+"http://localhost:5008/static/js/index.js";
+"http://localhost:5008/static/index.html";
+```
+
+#### 指定绝对路径
+
+默认情况下，`express.static(root, [options])`中的`root`都是相对于运行的`app.js`文件所在的相对路径，如果要暴露的静态文件目录在另外一个文件夹内，则应该使用绝对路径
+
+```js
+const path = require("path");
+// 进行绝对路径的拼接
+app.use("/static", express.static(path.join(__dirname, "public")));
 ```

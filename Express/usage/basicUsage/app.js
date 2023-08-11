@@ -64,11 +64,18 @@ app
     res.send("Update a book");
   });
 
-
-
-
 // 使用express.Router封装的中间件函数
 app.use("/bird", bird);
+
+// 暴露静态文件
+// app.use(express.static("public"));
+// 指定多个目录下静态文件的暴露
+app.use(express.static('files'));
+
+// 添加前缀
+app.use("/static", express.static("public"));
+
+
 
 // 启动服务器
 app.listen(port, () => {
