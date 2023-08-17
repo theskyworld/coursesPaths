@@ -375,3 +375,260 @@ const path = require("path");
 // 进行绝对路径的拼接
 app.use("/static", express.static(path.join(__dirname, "public")));
 ```
+
+### 中间件函数
+
+中间件函数是可以访问请求对象（req）、响应对象（res）和应用程序请求-响应循环中下一个中间件函数的函数。下一个中间件函数通常由名为 next 的变量表示
+
+Express 是一个路由和中间件网络框架，自身功能极少，Express 应用程序本质上是一系列中间件功能的调用
+
+通过路由能够对指定路径的请求进行响应处理，进行响应时其调用的回调函数就是一个中间件函数
+
+因为中间件函数能够接收`req`、`res`和`next`作为参数，所以在一个中间件函数内能够进行以下的操作:
+
+- 访问或修改 HTTP 请求中的 request(req)和 response(res)对象
+- 通过调用`next`来调用当前请求中的其它中间件函数
+- 通过调用`res.send`结束本次请求
+
+如果存在多个中间件函数，那么先被加载的先被调用
+
+自 express5 开始，如果一个中间件函数返回一个 promise，那么当该 promise 在被 reject 或者 resolve 之后都会调用`next`函数
+
+#### 自定义中间件函数
+
+创建以下中间件函数
+
+```js
+// appMiddlewares/index.js
+// 用于打印登录日志信息
+const myLogger = (req, res, next) => {
+  console.log("Logged");
+  next();
+};
+
+// 用于为对应的req对象添加requestTime属性
+const requestTime = (req, res, next) => {
+  req.requestTime = Date.now();
+  next();
+};
+
+// 用于验证请求时传递的cookie
+const validateCookies = async (req, res, next) => {
+  await cookieValidator(req.cookies);
+  next();
+};
+const cookieValidator = async (cookies) => {
+  try {
+    await externallyValidateCookie(cookies.testCookie);
+  } catch {
+    throw new Error("Invalid cookies");
+  }
+};
+
+module.exports = {
+  myLogger,
+  requestTime,
+  validateCookies,
+};
+```
+
+#### 注册使用中间件函数
+
+一个中间件函数定义好之后，可以直接添加在路由中作为回调函数使用，也可以通过`app.use`来进行注册使用
+
+需要注意的是，`app.use()`的调用需在对应的路由前，否则如果路由的回调函数中存在`res.send()`，会导致本次请求结束，后面的中间件函数不被调用、
+
+所以一般在路由中添加那个最后一个被调用的中间函数，调用`res.send()`结束本次请求。其它中间件函数则通过`app.use`注册使用，添加`next()`来调用下一个中间件函数
+
+```js
+const express = require("express");
+const {
+  myLogger,
+  validateCookies,
+  requestTime,
+} = require("./appMiddlewares/index");
+const cookieParser = require("cookie-parser");
+
+const app = express();
+const port = 5008;
+
+// 对所有的请求和请求路径使用myLogger中间件
+// 对该app上所有的请求和请求路径都会调用该中间件函数
+app.use(myLogger);
+// 对所有的请求和请求路径使用requestTime中间件
+app.use(requestTime);
+// 对所有的请求和请求路径使用第三方中间件cookieParser，解析cookie
+// app.use(cookieParser());
+// 对所有的请求和请求路径使用validateCookies中间件
+// app.use(validateCookies);
+
+// 对GET"/example"请求使用中间件函数
+app.get("/example", (req, res) => {
+  let responseText = "Hello World!<br>";
+  responseText += "<small>Requested at: " + req.requestTime + "</small>";
+  res.send(responseText);
+});
+
+// 启动服务器
+app.listen(port, () => {
+  console.log(`Example app listening on port '${port}'`);
+});
+```
+
+在 express 中，能够对以下类型的中间件函数进行注册使用
+
+- 应用级中间件(Application-level middleware)
+- 路由级中间件(Router-level middleware)
+- 错误处理中间件(Error-handling middleware)
+- 内置中间件(Built-in middleware)
+- 第三方中间件(Third-party middleware)
+
+##### 使用应用级中间件
+
+对所有的请求和请求路径绑定中间件函数
+
+```js
+app.use(function (req, res, next) {
+  console.log("Time:", Date.now());
+  next();
+});
+```
+
+对指定的请求路径绑定中间件函数
+
+```js
+app.use("/user/:id", function (req, res, next) {
+  console.log("Request Type:", req.method);
+  next();
+});
+```
+
+对指定的请求方法和请求路径绑定中间件函数
+
+```js
+app.get("/user/:id", function (req, res, next) {
+  res.send("USER");
+});
+```
+
+对指定的请求方法和请求路径绑定多个中间件函数
+
+```js
+app.use(
+  "/user/:id",
+  function (req, res, next) {
+    console.log("Request URL:", req.originalUrl);
+    next();
+  },
+  function (req, res, next) {
+    console.log("Request Type:", req.method);
+    next();
+  }
+);
+```
+
+对于同一请求方法和请求路径，结束当次请求后，后续的中间件函数不会被调用
+
+```js
+app.get(
+  "/user/:id",
+  function (req, res, next) {
+    console.log("ID:", req.params.id);
+    next();
+  },
+  // 对于同一请求方法和请求路径，结束当次请求后，后续的中间件函数不会被调用
+  function (req, res, next) {
+    res.send("User Info");
+  }
+);
+
+// 该中间件函数不会被调用
+app.get("/user/:id", function (req, res, next) {
+  console.log("userIe");
+  res.send(req.params.id);
+});
+```
+但是可以通过使用`next('route')`来进行对后续路由中回调函数的调用
+```js
+app.get(
+  "/user/:id",
+  function (req, res, next) {
+    // 如果id的值为0.则跳过当前路由中回调函数的调用
+    // 转而调用后续的下一个路由中回调函数的调用(res.send("special");)
+    if (req.params.id === "0") next("route");
+    // 调用当前路由中的下一个中间件函数
+    else next();
+  },
+  function (req, res, next) {
+    // send a regular response
+    res.send("regular");
+  }
+);
+
+// 当上述路由中调用了next("route")，该路由才会生效
+app.get("/user/:id", function (req, res, next) {
+  res.send("special");
+});
+```
+
+可以将多个中间件函数放置于一个数组中，同时结合路由中的回调函数使用
+```js
+function logOriginalUrl (req, res, next) {
+  console.log('Request URL:', req.originalUrl)
+  next()
+}
+
+function logMethod (req, res, next) {
+  console.log('Request Type:', req.method)
+  next()
+}
+
+var logStuff = [logOriginalUrl, logMethod]
+app.get('/user/:id', logStuff, function (req, res, next) {
+  res.send('User Info')
+})
+
+```
+
+##### 路由级中间件函数
+路由级中间件函数的执行逻辑类似于应用级中间件函数，但是使用时通过`router.use`而不是`app.use`进行使用
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### 配置中间件函数
+
+如果需要对一个已有的中间件函数进行配置后使用，可以将已有的中间件函数进行导出之后进行配置
+
+在已有的中间件函数文件内部导出中间件函数
+
+```js
+// my-middleware.js
+// 接收options参数，对函数进行配置
+module.exports = function (options) {
+  return function (req, res, next) {
+    // 实现基于options的中间件函数逻辑
+    next();
+  };
+};
+```
+
+```js
+// app.js
+var mw = require("./my-middleware.js");
+
+// 使用配置后的中间件函数
+app.use(mw({ option1: "1", option2: "2" }));
+```
